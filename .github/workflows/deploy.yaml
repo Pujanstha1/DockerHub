@@ -49,6 +49,12 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            echo "Adding ec2-user to docker group..."
+            sudo usermod -aG docker ec2-user || true
+
+            echo "Refreshing groups..."
+            newgrp docker || true
+
             echo "Pulling latest Docker image..."
             docker pull $DOCKER_USER/$DOCKER_REPO:latest
 
@@ -59,6 +65,7 @@ jobs:
             docker run -d --name webapp -p 80:80 $DOCKER_USER/$DOCKER_REPO:latest
 
             echo "Deployment completed!"
+
 
 
 # name: Build and Deploy Docker Container
