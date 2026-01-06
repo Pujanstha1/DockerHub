@@ -21,7 +21,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Step 2: Set up Docker Buildx
+      # Step 2: Setup Docker Buildx
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -49,83 +49,23 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
+            echo "Installing Docker (if not installed)..."
+            sudo yum install -y docker
+
+            echo "Starting and enabling Docker service..."
+            sudo systemctl start docker
+            sudo systemctl enable docker
+
             echo "Adding ec2-user to docker group..."
             sudo usermod -aG docker ec2-user || true
 
-            echo "Refreshing groups..."
-            newgrp docker || true
-
             echo "Pulling latest Docker image..."
-            docker pull $DOCKER_USER/$DOCKER_REPO:latest
+            sudo docker pull $DOCKER_USER/$DOCKER_REPO:latest
 
             echo "Stopping old container if exists..."
-            docker rm -f webapp || true
+            sudo docker rm -f webapp || true
 
             echo "Running new container..."
-            docker run -d --name webapp -p 80:80 $DOCKER_USER/$DOCKER_REPO:latest
+            sudo docker run -d --name webapp -p 80:80 $DOCKER_USER/$DOCKER_REPO:latest
 
-            echo "Deployment completed!"
-
-
-
-# name: Build and Deploy Docker Container
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# jobs:
-#   deploymycode:
-#     name: Deploy Docker Container to EC2
-#     runs-on: ubuntu-latest
-#     env:
-#       SERVER_IP: ${{ vars.SERVER_IP }}
-#       DOCKER_USER: ${{ vars.DOCKER_USER }}
-#       DOCKER_REPO: ${{ vars.DOCKER_REPO }}
-
-#     steps:
-#       # Step 1: Checkout repo
-#       - name: Checkout Code
-#         uses: actions/checkout@v4
-#         with:
-#           fetch-depth: 0
-
-#       # Step 2: Set up Docker Buildx
-#       - name: Setup Docker Buildx
-#         uses: docker/setup-buildx-action@v3
-
-#       # Step 3: Log in to Docker Hub
-#       - name: Login to DockerHub
-#         run: |
-#           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u $DOCKER_USER --password-stdin
-
-#       # Step 4: Build Docker image
-#       - name: Build Docker Image
-#         run: |
-#           docker build -t "$DOCKER_USER/$DOCKER_REPO:latest" .
-
-#       # Step 5: Push Docker image
-#       - name: Push Docker Image
-#         run: |
-#           docker push "$DOCKER_USER/$DOCKER_REPO:latest"
-
-#       # Step 6: Deploy to EC2
-#       - name: Deploy to EC2
-#         uses: appleboy/ssh-action@v0.1.7
-#         with:
-#           host: ${{ env.SERVER_IP }}
-#           username: ec2-user
-#           key: ${{ secrets.EC2_SSH_KEY }}
-#           port: 22
-#           script: |
-#             echo "Pulling latest Docker image..."
-#             docker pull $DOCKER_USER/$DOCKER_REPO:latest
-
-#             echo "Stopping old container if exists..."
-#             docker rm -f webapp || true
-
-#             echo "Running new container..."
-#             docker run -d --name webapp -p 80:80 $DOCKER_USER/$DOCKER_REPO:latest
-
-#             echo "Deployment completed!"
+            echo "Deployment completed successfully!"
